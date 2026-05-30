@@ -2,6 +2,6 @@ package tool_utils
 
 #shell: {
 	expression: string
-	cmd: ["sh", "-c", _expression]
+	cmd: ["sh", "-c", expression]
 	...
 }
