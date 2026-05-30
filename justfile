@@ -1,0 +1,4 @@
+
+
+publish:
+    echo 1
