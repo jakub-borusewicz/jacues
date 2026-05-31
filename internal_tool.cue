@@ -26,15 +26,21 @@ command: {
 		}
 		write_to_version_file: file.Create & {
 			filename: version_file_name
-			contents: string
+			contents: "\(bumped_version.version_string)\n"
+		}
+		commit: exec.Run & Tu.#shell & {
+			_dep: write_to_version_file.contents
+			expression: "git add * && git commit -m 'version \(bumped_version.version_string)'"
+			stdout: string
 		}
 		run_publish: exec.Run & Tu.#shell & {
-			_dep: write_to_version_file.contents
+			_dep: commit.stdout
 			expression: "cue mod publish \(bumped_version.version_string) --dry-run"
+			stdout: string
 		}
-
 		print: cli.Print & {
-			text: bumped_version.version_string
+			_dep: run_publish.stdout
+			text: "Published version \(bumped_version.version_string)"
 		}
 	}
 	test: {
