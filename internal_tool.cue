@@ -38,6 +38,9 @@ command: {
 			expression: "cue mod publish \(bumped_version.version_string)"
 			stdout: string
 		}
+		push: exec.Run & Tu.#shell & {
+			expression: "git push"
+		}
 		print: cli.Print & {
 			text: "Published version \(bumped_version.version_string). Publish output: \(run_publish.stdout)"
 		}
