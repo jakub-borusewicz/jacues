@@ -1,4 +1,4 @@
 
 
 publish:
-    echo 1
+    cue cmd publish
