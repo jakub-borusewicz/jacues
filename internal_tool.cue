@@ -35,7 +35,7 @@ command: {
 		}
 		run_publish: exec.Run & Tu.#shell & {
 			_dep: commit.stdout
-			expression: "cue mod publish \(bumped_version.version_string) --dry-run"
+			expression: "cue mod publish \(bumped_version.version_string)"
 			stdout: string
 		}
 		print: cli.Print & {
