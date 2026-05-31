@@ -39,8 +39,7 @@ command: {
 			stdout: string
 		}
 		print: cli.Print & {
-			_dep: run_publish.stdout
-			text: "Published version \(bumped_version.version_string)"
+			text: "Published version \(bumped_version.version_string). Publish output: \(run_publish.stdout)"
 		}
 	}
 	test: {
