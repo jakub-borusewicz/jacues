@@ -62,7 +62,7 @@ repos: [
 		language:       "system"
 		pass_filenames: true
 		files:          ".*\\.cue$"
-	}]
+	}, ...#Hook]
 },
 ...#Repo
 ]
