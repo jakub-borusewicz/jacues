@@ -7,7 +7,7 @@ package pre_commit
 
 #Repo: {
 	repo: string
-	rev:  string
+	rev?:  string
 	hooks: [...#Hook]
 	...
 }
