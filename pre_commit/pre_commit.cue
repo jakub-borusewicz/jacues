@@ -1,5 +1,16 @@
 package pre_commit
 
+#Hook: {
+	id:             string
+	...
+}
+
+#Repo: {
+	repo: string
+	rev:  string
+	hooks: [...#Hook]
+	...
+}
 repos: [
  {
 	repo: "https://github.com/pre-commit/pre-commit-hooks"
@@ -52,4 +63,6 @@ repos: [
 		pass_filenames: true
 		files:          ".*\\.cue$"
 	}]
-}]
+},
+...#Repo
+]
