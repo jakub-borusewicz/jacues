@@ -41,13 +41,6 @@ repos: [
 		id: "check-useless-excludes"
 	}]
 }, {
-	repo: "https://github.com/jakub-borusewicz/cue-auto-export"
-	rev:  "v1.1.2"
-	hooks: [{
-		id:      "cue-auto-export"
-		exclude: "(?x)^(config/.* | cue.mod/.*)$"
-	}]
-}, {
 	repo: "local"
 	hooks: [{
 		id:             "update-cue-files"
