@@ -3,6 +3,7 @@
 }:
 pkgs.mkShell {
   packages = with pkgs; [
-    bats
+    (pkgs.bats.withLibraries (p: [ p.bats-support p.bats-assert ]))
   ];
+
 }
