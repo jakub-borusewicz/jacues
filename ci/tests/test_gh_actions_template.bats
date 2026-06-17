@@ -6,12 +6,12 @@ setup() {
 
 
 @test "test export" {
-  run cue export --out yaml ci/github_actions_template.cue
+  run bats_pipe echo 'package github_actions_template,#include_jobs: ["cue_module"]' \| cue export --out yaml ci/github_actions_template.cue -
 
   assert_success
   assert_output - <<-'EOF'
 jobs:
-  trala:
+  cue_module:
     steps:
       - name: run bats
         run: bats .
