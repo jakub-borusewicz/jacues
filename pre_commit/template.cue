@@ -130,10 +130,24 @@ repos: [
 	shell?: string
 	language?: string
 	alias?: string
+	pass_filenames?: bool | int
+	always_run?: bool
+	stages?: [...string]
+	groups?: [...string]
+	require_serial?: bool
+	fail_fast?: bool
+	verbose?: bool
+	log_file?: string
+	description?: string
+	language_version?: string
+	additional_dependencies?: [...string]
+	minimum_prek_version?: string
+
 	_args?: [...string]
 	args?: [...string] | *_args
-
-	pass_filenames?: bool
+	if _args != _|_ {
+		args: [...string] | *_args
+	}
 
 	_env?: {[string]: string}
 	_env?: {[string]: string}
@@ -152,12 +166,32 @@ repos: [
 	if _exclude != _|_ {
 		exclude: string | *_exclude
 	}
+
+	_types?: [...string]
+	types?: [...string]
+	if _types != _|_ {
+		types: [...string] | *_types
+	}
+
+	_types_or?: [...string]
+	types_or?: [...string]
+	if _types_or != _|_ {
+		types_or: [...string] | *_types_or
+	}
+
+	_exclude_types?: [...string]
+	exclude_types?: [...string]
+	if _exclude_types != _|_ {
+		exclude_types: [...string] | *_exclude_types
+	}
+
 }
 
 #HookLocal: #Hook & {
 	name: *#Hook.id | string
 	entry: string
 	language: string
+	pass_filenames: bool | int
 	...
 }
 
