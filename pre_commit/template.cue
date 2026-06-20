@@ -1,7 +1,5 @@
 package pre_commit_template
 
-import pcd "github.com/jakub-borusewicz/jacues/pre_commit:pre_commit_definitions"
-
 repos: [...#Repo]
 repos: [
 	#pre_commit_hooks_repo,
@@ -10,7 +8,9 @@ repos: [
 	#local_repo,
 ]
 
-
+// TODO create hook for changing the hook and repo definitions, to ensure that
+//  some fields can be overwritten and have default (*"value" | string)
+//  Probably with something that manipulates ast (treesitter?)
 #pre_commit_hooks_repo: #Repo
 #pre_commit_hooks_repo: {
 	repo: "https://github.com/pre-commit/pre-commit-hooks"
@@ -118,8 +118,8 @@ repos: [
 		"""
 	language:       "system"
 	pass_filenames: true
-	files:          ".*\\.cue$"
-	exclude:        "(?x)^(config/.* | cue.mod/.* | .*_tool.cue | template/.*)$"
+	files:          *".*\\.cue$" | string
+	exclude:        *"(?x)^(config/.* | cue.mod/.* | .*_tool.cue | template/.*)$" | string
 }
 
 #Hook: {
