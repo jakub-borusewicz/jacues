@@ -10,9 +10,11 @@ import (
 import S "strings"
 
 import Sc "strconv"
+import tt "github.com/jakub-borusewicz/jacues/tools:tool_template"
 
 import Tu "github.com/jakub-borusewicz/jacues/tools:tool_utils"
 
+command: tt.command
 command: {
 	publish: {
 		version_file_name: "version"
