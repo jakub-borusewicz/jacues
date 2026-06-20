@@ -10,4 +10,5 @@ pre-commit:
     prek run --all-files
 
 test:
-    nix-shell --run "bats ci/github_actions/tests/test_gh_actions_template.bats"
+    nix-shell --attr default --run "bats --filter-tags '!nix_fake' --recursive ."
+    nix-shell --attr testFake --run "bats --filter-tags 'nix_fake' --recursive ."

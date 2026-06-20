@@ -3,5 +3,6 @@ import pre_commit "github.com/jakub-borusewicz/jacues/pre_commit:pre_commit_temp
 pre_commit
 
 #cue_auto_export_hook: {
-	 files: "*"
+	files:   "\\.github/workflows/main.yaml.cue"
+	exclude: "------------"
 }

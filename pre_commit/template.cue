@@ -36,17 +36,17 @@ repos: [
 
 #check_added_large_files_hook: #Hook
 #check_added_large_files_hook: {
-	id:        "check-added-large-files"
+	id: "check-added-large-files"
 }
 
 #check_merge_conflict_hook: #Hook
 #check_merge_conflict_hook: {
-	id:        "check-merge-conflict"
+	id: "check-merge-conflict"
 }
 
 #detect_private_key_hook: #Hook
 #detect_private_key_hook: {
-	id:        "detect-private-key"
+	id: "detect-private-key"
 }
 
 #sync_pre_commit_deps_repo: #Repo
@@ -118,27 +118,26 @@ repos: [
 		"""
 	language:       "system"
 	pass_filenames: true
-	_files: 				".*\\.cue$"
-//	files:          *".*\\.cue$" | string
+	_files:         ".*\\.cue$"
 	exclude:        *"(?x)^(config/.* | cue.mod/.* | .*_tool.cue | template/.*)$" | string
 }
 
 #Hook: {
-	id: string
-	name?: string
-	entry?: string
-	shell?: string
-	language?: string
-	alias?: string
+	id:              string
+	name?:           string
+	entry?:          string
+	shell?:          string
+	language?:       string
+	alias?:          string
 	pass_filenames?: bool | int
-	always_run?: bool
+	always_run?:     bool
 	stages?: [...string]
 	groups?: [...string]
-	require_serial?: bool
-	fail_fast?: bool
-	verbose?: bool
-	log_file?: string
-	description?: string
+	require_serial?:   bool
+	fail_fast?:        bool
+	verbose?:          bool
+	log_file?:         string
+	description?:      string
 	language_version?: string
 	additional_dependencies?: [...string]
 	minimum_prek_version?: string
@@ -156,13 +155,13 @@ repos: [
 	}
 
 	_files?: string
-	files?: string
+	files?:  string
 	if _files != _|_ {
 		files: string | *_files
 	}
 
 	_exclude?: string
-	exclude?: string
+	exclude?:  string
 	if _exclude != _|_ {
 		exclude: string | *_exclude
 	}
@@ -188,9 +187,9 @@ repos: [
 }
 
 #HookLocal: #Hook & {
-	name: *#Hook.id | string
-	entry: string
-	language: string
+	name:           *#Hook.id | string
+	entry:          string
+	language:       string
 	pass_filenames: bool | int
 	...
 }

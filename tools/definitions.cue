@@ -1,6 +1,5 @@
 package tool_commands_definitions
 
-
 //import L "list"
 import S "strings"
 
@@ -29,9 +28,8 @@ extension_out_map: {
 	".txt":       "text"
 	"":           "text"
 }
-
-command_name_list: ["cue_auto_export"]
-#command_name: or(commands_name_list)
+#command_name_list: ["cue_auto_export"]
+#command_name: or(#commands_name_list)
 
 //pre_commit_input: [string, ...] @tag(pre_commit_input)
 cue_file_path: string @tag(cue_file_path)

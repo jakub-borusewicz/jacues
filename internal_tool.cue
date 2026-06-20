@@ -10,12 +10,18 @@ import (
 import S "strings"
 
 import Sc "strconv"
-import tt "github.com/jakub-borusewicz/jacues/tools:tool_template"
+
+import tool_template "github.com/jakub-borusewicz/jacues/tools:tool_template"
 
 import Tu "github.com/jakub-borusewicz/jacues/tools:tool_utils"
 
-command: tt.command
+#cue_file_path: string @tag(cue_file_path)
+
+#include_commands: ["cue_auto_export"]
+tool_template
+
 command: {
+	cue_auto_export: tool_template.#commands.cue_auto_export & {file_path: #cue_file_path}
 	publish: {
 		version_file_name: "version"
 		version_file_content: file.Read & {
