@@ -1,4 +1,5 @@
-package pre_commit
+package pre_commit_definitions
+
 
 #Hook: {
 	id: string
@@ -11,8 +12,9 @@ package pre_commit
 	hooks: [...#Hook]
 	...
 }
-repos: [
-	{
+
+repos_by_name: {
+	pre_commit_hooks: {
 		repo: "https://github.com/pre-commit/pre-commit-hooks"
 		rev:  "v4.6.0"
 		hooks: [{
@@ -29,18 +31,21 @@ repos: [
 			id:        "detect-private-key"
 			fail_fast: true
 		}]
-	}, {
+	}
+	sync_pre_commit_deps: {
 		repo: "https://github.com/mxr/sync-pre-commit-deps"
 		rev:  "v0.0.1"
 		hooks: [{id: "sync-pre-commit-deps"}]
-	}, {
+	}
+	meta: {
 		repo: "meta"
 		hooks: [{
 			id: "check-hooks-apply"
 		}, {
 			id: "check-useless-excludes"
 		}]
-	}, {
+	}
+	local: {
 		repo: "local"
 		hooks: [{
 			id:             "update-cue-files"
@@ -55,7 +60,6 @@ repos: [
 			language:       "system"
 			pass_filenames: true
 			files:          ".*\\.cue$"
-		}, ...#Hook]
-	},
-	...#Repo,
-]
+		}
+	]}
+}
