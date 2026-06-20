@@ -5,22 +5,22 @@ import pcd "github.com/jakub-borusewicz/jacues/pre_commit:pre_commit_definitions
 repos: [...#Repo]
 repos: [
 	#pre_commit_hooks_repo,
-	pcd.repos_by_name.sync_pre_commit_deps,
-	pcd.repos_by_name.meta,
-	pcd.repos_by_name.local,
+	#sync_pre_commit_deps_repo,
+	#meta_repo,
+	#local_repo,
 ]
 
 
 #pre_commit_hooks_repo: #Repo
 #pre_commit_hooks_repo: {
-		repo: "https://github.com/pre-commit/pre-commit-hooks"
-		rev:  "v4.6.0"
-		hooks: [
-			#end_of_file_fixer_hook,
-			#trailing_whitespace_hook,
-			#check_added_large_files_hook,
-			#check_merge_conflict_hook,
-			#detect_private_key_hook
+	repo: "https://github.com/pre-commit/pre-commit-hooks"
+	rev:  "v4.6.0"
+	hooks: [
+		#end_of_file_fixer_hook,
+		#trailing_whitespace_hook,
+		#check_added_large_files_hook,
+		#check_merge_conflict_hook,
+		#detect_private_key_hook,
 	]
 }
 
@@ -31,7 +31,7 @@ repos: [
 
 #trailing_whitespace_hook: #Hook
 #trailing_whitespace_hook: {
-			id: "trailing-whitespace"
+	id: "trailing-whitespace"
 }
 
 #check_added_large_files_hook: #Hook
@@ -49,59 +49,67 @@ repos: [
 	id:        "detect-private-key"
 }
 
-repos_by_name: {
-	pre_commit_hooks: {
-		repo: "https://github.com/pre-commit/pre-commit-hooks"
-		rev:  "v4.6.0"
-		hooks: [{
-			id: "end-of-file-fixer"
-		}, {
-			id: "trailing-whitespace"
-		}, {
-			id:        "check-added-large-files"
-			fail_fast: true
-		}, {
-			id:        "check-merge-conflict"
-			fail_fast: true
-		}, {
-			id:        "detect-private-key"
-			fail_fast: true
-		}]
-	}
-	sync_pre_commit_deps: {
-		repo: "https://github.com/mxr/sync-pre-commit-deps"
-		rev:  "v0.0.1"
-		hooks: [{id: "sync-pre-commit-deps"}]
-	}
-	meta: {
-		repo: "meta"
-		hooks: [{
-			id: "check-hooks-apply"
-		}, {
-			id: "check-useless-excludes"
-		}]
-	}
-	local: {
-		repo: "local"
-		hooks: [{
-			id:             "update-cue-files"
-			name:           "update-cue-files"
-			entry:          "cue fix"
-			language:       "system"
-			pass_filenames: true
-		}, {
-			id:             "format-cue-files"
-			name:           "format-cue-files"
-			entry:          "cue fmt"
-			language:       "system"
-			pass_filenames: true
-			files:          ".*\\.cue$"
-		},
-		#cue_auto_export_hook
-	]}
+#sync_pre_commit_deps_repo: #Repo
+#sync_pre_commit_deps_repo: {
+	repo: "https://github.com/mxr/sync-pre-commit-deps"
+	rev:  "v0.0.1"
+	hooks: [#sync_pre_commit_deps_hook]
 }
 
+#sync_pre_commit_deps_hook: #Hook
+#sync_pre_commit_deps_hook: {
+	id: "sync-pre-commit-deps"
+}
 
+#meta_repo: #Repo
+#meta_repo: {
+	repo: "meta"
+	hooks: [
+		#check_hooks_apply_hook,
+		#check_useless_excludes_hook,
+	]
+}
+
+#check_hooks_apply_hook: #Hook
+#check_hooks_apply_hook: {
+	id: "check-hooks-apply"
+}
+
+#check_useless_excludes_hook: #Hook
+#check_useless_excludes_hook: {
+	id: "check-useless-excludes"
+}
+
+#local_repo: #Repo
+#local_repo: {
+	repo: "local"
+	hooks: [
+		#update_cue_files_hook,
+		#format_cue_files_hook,
+		#cue_auto_export_hook,
+	]
+}
+
+#update_cue_files_hook: #Hook
+#update_cue_files_hook: {
+	id:             "update-cue-files"
+	name:           "update-cue-files"
+	entry:          "cue fix"
+	language:       "system"
+	pass_filenames: true
+}
+
+#format_cue_files_hook: #Hook
+#format_cue_files_hook: {
+	id:             "format-cue-files"
+	name:           "format-cue-files"
+	entry:          "cue fmt"
+	language:       "system"
+	pass_filenames: true
+	files:          ".*\\.cue$"
+}
+
+#cue_auto_export_hook: #Hook
 #cue_auto_export_hook: {
 	id:   "cue-auto-export-tool"
 	name: "cue-auto-export-tool"
@@ -113,7 +121,6 @@ repos_by_name: {
 	files:          ".*\\.cue$"
 	exclude:        "(?x)^(config/.* | cue.mod/.* | .*_tool.cue | template/.*)$"
 }
-
 
 #Hook: {
 	id: string
