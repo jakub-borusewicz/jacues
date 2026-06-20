@@ -1,12 +1,16 @@
 package internal_tool
+
 import (
 	"tool/cli"
-//		"tool/os"
+	//		"tool/os"
 	"tool/exec"
-		"tool/file"
+	"tool/file"
 )
+
 import S "strings"
+
 import Sc "strconv"
+
 import Tu "github.com/jakub-borusewicz/jacues/tools:tool_utils"
 
 command: {
@@ -29,14 +33,14 @@ command: {
 			contents: "\(bumped_version.version_string)\n"
 		}
 		commit: exec.Run & Tu.#shell & {
-			_dep: write_to_version_file.contents
+			_dep:       write_to_version_file.contents
 			expression: "git add * && git commit -m 'version \(bumped_version.version_string)'"
-			stdout: string
+			stdout:     string
 		}
 		run_publish: exec.Run & Tu.#shell & {
-			_dep: commit.stdout
+			_dep:       commit.stdout
 			expression: "cue mod publish \(bumped_version.version_string)"
-			stdout: string
+			stdout:     string
 		}
 		push: exec.Run & Tu.#shell & {
 			expression: "git push"
@@ -53,7 +57,7 @@ command: {
 }
 
 #get_semver_from_raw: {
-	raw: string
+	raw:   string
 	array: S.Split(S.TrimPrefix(S.TrimSpace(raw), "v"), ".")
 	semver: #SemVer & {
 		major: Sc.Atoi(array[0])
@@ -63,8 +67,8 @@ command: {
 }
 
 #SemVer: {
-	major: int
-	minor: int
-	patch: int
+	major:          int
+	minor:          int
+	patch:          int
 	version_string: "v\(major).\(minor).\(patch)"
 }

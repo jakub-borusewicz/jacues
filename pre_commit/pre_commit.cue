@@ -1,61 +1,61 @@
 package pre_commit
 
 #Hook: {
-	id:             string
+	id: string
 	...
 }
 
 #Repo: {
 	repo: string
-	rev?:  string
+	rev?: string
 	hooks: [...#Hook]
 	...
 }
 repos: [
- {
-	repo: "https://github.com/pre-commit/pre-commit-hooks"
-	rev:  "v4.6.0"
-	hooks: [{
-		id:      "end-of-file-fixer"
+	{
+		repo: "https://github.com/pre-commit/pre-commit-hooks"
+		rev:  "v4.6.0"
+		hooks: [{
+			id: "end-of-file-fixer"
+		}, {
+			id: "trailing-whitespace"
+		}, {
+			id:        "check-added-large-files"
+			fail_fast: true
+		}, {
+			id:        "check-merge-conflict"
+			fail_fast: true
+		}, {
+			id:        "detect-private-key"
+			fail_fast: true
+		}]
 	}, {
-		id:      "trailing-whitespace"
+		repo: "https://github.com/mxr/sync-pre-commit-deps"
+		rev:  "v0.0.1"
+		hooks: [{id: "sync-pre-commit-deps"}]
 	}, {
-		id:        "check-added-large-files"
-		fail_fast: true
+		repo: "meta"
+		hooks: [{
+			id: "check-hooks-apply"
+		}, {
+			id: "check-useless-excludes"
+		}]
 	}, {
-		id:        "check-merge-conflict"
-		fail_fast: true
-	}, {
-		id:        "detect-private-key"
-		fail_fast: true
-	}]
-}, {
-			repo: "https://github.com/mxr/sync-pre-commit-deps"
-	rev:  "v0.0.1"
-	hooks: [{id: "sync-pre-commit-deps"}]
-}, {
-	repo: "meta"
-	hooks: [{
-		id: "check-hooks-apply"
-	}, {
-		id: "check-useless-excludes"
-	}]
-}, {
-	repo: "local"
-	hooks: [{
-		id:             "update-cue-files"
-		name:           "update-cue-files"
-		entry:          "cue fix"
-		language:       "system"
-		pass_filenames: true
-	}, {
-		id:             "format-cue-files"
-		name:           "format-cue-files"
-		entry:          "cue fmt"
-		language:       "system"
-		pass_filenames: true
-		files:          ".*\\.cue$"
-	}, ...#Hook]
-},
-...#Repo
+		repo: "local"
+		hooks: [{
+			id:             "update-cue-files"
+			name:           "update-cue-files"
+			entry:          "cue fix"
+			language:       "system"
+			pass_filenames: true
+		}, {
+			id:             "format-cue-files"
+			name:           "format-cue-files"
+			entry:          "cue fmt"
+			language:       "system"
+			pass_filenames: true
+			files:          ".*\\.cue$"
+		}, ...#Hook]
+	},
+	...#Repo,
 ]

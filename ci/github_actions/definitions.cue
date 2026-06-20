@@ -1,6 +1,6 @@
 package github_actions_definitions
-import GA "cue.dev/x/githubactions"
 
+import GA "cue.dev/x/githubactions"
 
 steps_by_name: [Key=string]: GA.#Step
 steps_by_name: {
