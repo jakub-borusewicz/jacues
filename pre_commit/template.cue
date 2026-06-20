@@ -90,7 +90,7 @@ repos: [
 	]
 }
 
-#update_cue_files_hook: #Hook
+#update_cue_files_hook: #HookLocal
 #update_cue_files_hook: {
 	id:             "update-cue-files"
 	name:           "update-cue-files"
@@ -99,7 +99,7 @@ repos: [
 	pass_filenames: true
 }
 
-#format_cue_files_hook: #Hook
+#format_cue_files_hook: #HookLocal
 #format_cue_files_hook: {
 	id:             "format-cue-files"
 	name:           "format-cue-files"
@@ -109,7 +109,7 @@ repos: [
 	files:          ".*\\.cue$"
 }
 
-#cue_auto_export_hook: #Hook
+#cue_auto_export_hook: #HookLocal
 #cue_auto_export_hook: {
 	id:   "cue-auto-export-tool"
 	name: "cue-auto-export-tool"
@@ -118,12 +118,46 @@ repos: [
 		"""
 	language:       "system"
 	pass_filenames: true
-	files:          *".*\\.cue$" | string
+	_files: 				".*\\.cue$"
+//	files:          *".*\\.cue$" | string
 	exclude:        *"(?x)^(config/.* | cue.mod/.* | .*_tool.cue | template/.*)$" | string
 }
 
 #Hook: {
 	id: string
+	name?: string
+	entry?: string
+	shell?: string
+	language?: string
+	alias?: string
+	_args?: [...string]
+	args?: [...string] | *_args
+
+	pass_filenames?: bool
+
+	_env?: {[string]: string}
+	_env?: {[string]: string}
+	if _env != _|_ {
+		env: {[string]: string} | *_env
+	}
+
+	_files?: string
+	files?: string
+	if _files != _|_ {
+		files: string | *_files
+	}
+
+	_exclude?: string
+	exclude?: string
+	if _exclude != _|_ {
+		exclude: string | *_exclude
+	}
+}
+
+#HookLocal: #Hook & {
+	name: *#Hook.id | string
+	entry: string
+	language: string
 	...
 }
 
