@@ -14,6 +14,7 @@ jobs: {
 
 #jobs_by_type: {
 	"cue_module": {
+		"runs-on": "ubuntu-latest"
 		steps: [
 			#checkout_step,
 			#setup_just_step,
