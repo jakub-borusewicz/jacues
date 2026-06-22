@@ -25,3 +25,9 @@ teardown() {
   run cat "$CUE_CALLS_DIR/001.txt"
   assert_output "export /tmp/test.json.cue --out json --outfile /tmp/test.json --force"
 }
+
+@test "cue_auto_export fails with status 1 when file_path does not end with .cue" {
+  run cue cmd cue_auto_export -t "cue_file_path=/tmp/test.json"
+  assert_failure
+  assert_output --partial 'file_path: invalid value "/tmp/test.json"'
+}
