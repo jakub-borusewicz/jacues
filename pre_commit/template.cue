@@ -122,9 +122,9 @@ repos: [
 		"""
 	language:       "system"
 	pass_filenames: true
-	_files:         ".*\\.cue$"
+	_files:         *".*\\.cue$" | string
 	if #project_type != "cue_module" {
-		_exclude: *"(?x)^(config/.* | cue.mod/.*)$"
+		_exclude: "(?x)^(config/.* | cue.mod/.*)$"
 	}
 }
 
