@@ -2,7 +2,7 @@ package pre_commit_template
 
 import meta "github.com/jakub-borusewicz/jacues/meta:meta"
 
-#project_type: meta.#project_type
+#project_type!: meta.#project_type
 
 repos: [...#Repo]
 repos: [
