@@ -9,7 +9,7 @@ import S "strings"
 import "path"
 
 import (
-	"tool/cli"
+	//	"tool/cli"
 	//		"tool/os"
 	"tool/exec"
 	//	"tool/file"
@@ -28,13 +28,12 @@ command: {
 }
 
 #cue_auto_export: {
-	file_path:           string
+	file_path:            string
 	filepath_without_cue: S.TrimSuffix(file_path, ".cue")
 	file_extension:       path.Ext(filepath_without_cue, path.Unix)
 	out_param:            extension_out_map[file_extension]
 	run_cue_export: exec.Run & Tu.#shell & {
-		_dep2: print
-		_dep:  file_extension
+		_dep:       file_extension
 		expression: "cue export \(file_path) --out \(out_param) --outfile \(filepath_without_cue) --force"
 		stdout:     string
 	}

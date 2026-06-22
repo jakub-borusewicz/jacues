@@ -1,5 +1,9 @@
 package pre_commit_template
 
+import meta "github.com/jakub-borusewicz/jacues/meta:meta"
+
+#project_type: meta.#project_type
+
 repos: [...#Repo]
 repos: [
 	#pre_commit_hooks_repo,
@@ -119,7 +123,9 @@ repos: [
 	language:       "system"
 	pass_filenames: true
 	_files:         ".*\\.cue$"
-	exclude:        *"(?x)^(config/.* | cue.mod/.* | .*_tool.cue | template/.*)$" | string
+	if #project_type != "cue_module" {
+		_exclude: *"(?x)^(config/.* | cue.mod/.*)$" | string
+	}
 }
 
 #Hook: {
