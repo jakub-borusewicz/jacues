@@ -3,4 +3,14 @@ name: ci
   push:
     branches:
       - '**'
-jobs: {}
+jobs:
+  test_cue_module:
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: extractions/setup-just@v4
+        with:
+          just-version: 1.51.0
+      - name: run tests
+        run: just test
