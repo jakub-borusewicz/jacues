@@ -11,7 +11,7 @@ setup() {
   assert_success
   assert_output --partial - <<-'EOF'
 jobs:
-  cue_module:
+  test_cue_module:
     steps:
       - uses: actions/checkout@v3
         with:

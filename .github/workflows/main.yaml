@@ -12,5 +12,6 @@ jobs:
       - uses: extractions/setup-just@v4
         with:
           just-version: 1.51.0
+      - uses: cachix/install-nix-action@v30
       - name: run tests
         run: just test

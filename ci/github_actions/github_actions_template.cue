@@ -17,6 +17,7 @@ jobs: {
 		steps: [
 			#checkout_step,
 			#setup_just_step,
+			#install_nix_action_step,
 			{
 				name: "run tests"
 				run:  "just test"
@@ -37,4 +38,9 @@ jobs: {
 #setup_just_step: {
 	uses: "extractions/setup-just@v4"
 	with: {"just-version": "1.51.0"}
+}
+
+#install_nix_action_step: GA.#Step
+#install_nix_action_step: {
+	uses: "cachix/install-nix-action@v30"
 }
