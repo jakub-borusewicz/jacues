@@ -12,6 +12,7 @@ setup() {
   assert_output --partial - <<-'EOF'
 jobs:
   test_cue_module:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
