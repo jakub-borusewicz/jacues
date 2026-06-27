@@ -21,6 +21,6 @@ in
     packages = [ real-cue bats-with-libs ];
   };
   testFake = pkgs.mkShell {
-    packages = [ fake-cue bats-with-libs ];
+    packages = [ fake-cue real-cue bats-with-libs ];
   };
 }
