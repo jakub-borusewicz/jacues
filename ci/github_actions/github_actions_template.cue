@@ -44,4 +44,7 @@ jobs: {
 #install_nix_action_step: GA.#Step
 #install_nix_action_step: {
 	uses: "cachix/install-nix-action@v30"
+	with: {
+		nix_path: "nixpkgs=channel:nixos-unstable"
+	}
 }

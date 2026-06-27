@@ -28,7 +28,7 @@ command: {
 }
 
 #cue_auto_export: {
-	file_path: string & =~"\\.cue$"
+	file_path:            string & =~"\\.cue$"
 	filepath_without_cue: S.TrimSuffix(file_path, ".cue")
 	file_extension:       path.Ext(filepath_without_cue, path.Unix)
 	out_param:            extension_out_map[file_extension]

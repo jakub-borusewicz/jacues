@@ -14,5 +14,7 @@ jobs:
         with:
           just-version: 1.51.0
       - uses: cachix/install-nix-action@v30
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: run tests
         run: just test
