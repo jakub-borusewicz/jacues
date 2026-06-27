@@ -18,7 +18,7 @@ let
 in
 {
   default = pkgs.mkShell {
-    packages = [ bats-with-libs ];
+    packages = [ real-cue bats-with-libs ];
   };
   testFake = pkgs.mkShell {
     packages = [ fake-cue bats-with-libs ];
