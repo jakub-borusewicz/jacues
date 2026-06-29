@@ -20,27 +20,16 @@ teardown() {
 @test "publish updates version file with bumped patch version" {
   run cue cmd publish -t "version_file=$VERSION_FILE"
   assert_success
+
   run cat "$VERSION_FILE"
   assert_output "v0.0.12"
-}
 
-@test "publish calls git commit with bumped version" {
-  run cue cmd publish -t "version_file=$VERSION_FILE"
-  assert_success
   run cat "$GIT_CALLS_DIR/002.txt"
   assert_output "commit -m version v0.0.12"
-}
 
-@test "publish calls cue mod publish with bumped version" {
-  run cue cmd publish -t "version_file=$VERSION_FILE"
-  assert_success
   run cat "$CUE_CALLS_DIR/001.txt"
   assert_output "mod publish v0.0.12"
-}
 
-@test "publish calls git push after publishing" {
-  run cue cmd publish -t "version_file=$VERSION_FILE"
-  assert_success
   run cat "$GIT_CALLS_DIR/003.txt"
   assert_output "push"
 }

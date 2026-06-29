@@ -2,9 +2,6 @@ package internal_tool
 
 import (
 	"tool/cli"
-	//		"tool/os"
-	"tool/exec"
-	"tool/file"
 )
 
 import S "strings"
@@ -18,42 +15,7 @@ import Tu "github.com/jakub-borusewicz/jacues/tools:tool_utils"
 
 command: {
 	cue_auto_export: Tu.#commands.cue_auto_export & {file_path: #cue_file_path}
-	publish: {
-		version_file_name: #version_file
-		version_file_content: file.Read & {
-			filename: version_file_name
-			contents: string
-		}
-		get_semver: #get_semver_from_raw & {
-			raw: version_file_content.contents
-		}
-		bumped_version: #SemVer & {
-			major: get_semver.semver.major
-			minor: get_semver.semver.minor
-			patch: get_semver.semver.patch + 1
-		}
-		write_to_version_file: file.Create & {
-			filename: version_file_name
-			contents: "\(bumped_version.version_string)\n"
-		}
-		commit: exec.Run & Tu.#shell & {
-			_dep:       write_to_version_file.contents
-			expression: "git add * && git commit -m 'version \(bumped_version.version_string)'"
-			stdout:     string
-		}
-		run_publish: exec.Run & Tu.#shell & {
-			_dep:       commit.stdout
-			expression: "cue mod publish \(bumped_version.version_string)"
-			stdout:     string
-		}
-		push: exec.Run & Tu.#shell & {
-			_dep:       run_publish.stdout
-			expression: "git push"
-		}
-		print: cli.Print & {
-			text: "Published version \(bumped_version.version_string). Publish output: \(run_publish.stdout)"
-		}
-	}
+	publish: Tu.#commands.publish & {version_file_name: #version_file}
 	test: {
 		print: cli.Print & {
 			text: "lol2"
