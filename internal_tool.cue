@@ -13,12 +13,13 @@ import Sc "strconv"
 
 import Tu "github.com/jakub-borusewicz/jacues/tools:tool_utils"
 
-#cue_file_path: string @tag(cue_file_path)
+#cue_file_path: string              @tag(cue_file_path)
+#version_file:  string | *"version" @tag(version_file)
 
 command: {
 	cue_auto_export: Tu.#commands.cue_auto_export & {file_path: #cue_file_path}
 	publish: {
-		version_file_name: "version"
+		version_file_name: #version_file
 		version_file_content: file.Read & {
 			filename: version_file_name
 			contents: string
@@ -46,6 +47,7 @@ command: {
 			stdout:     string
 		}
 		push: exec.Run & Tu.#shell & {
+			_dep:       run_publish.stdout
 			expression: "git push"
 		}
 		print: cli.Print & {
