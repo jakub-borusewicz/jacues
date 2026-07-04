@@ -13,7 +13,7 @@ import (
 
 #commands: {
 	cue_auto_export: #cue_auto_export
-	publish: #publish
+	publish_cue_module: #publish_cue_module
 }
 
 #cue_auto_export: {
@@ -43,7 +43,7 @@ extension_out_map: {
 }
 
 
-#publish: {
+#publish_cue_module: {
 		version_file_name: string
 		version_file_content: file.Read & {
 			filename: version_file_name
