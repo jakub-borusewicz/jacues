@@ -80,6 +80,10 @@ extension_out_map: {
 		}
 }
 
+#publish_copier_template: {
+
+}
+
 #shell: {
 	expression: string
 	cmd: ["sh", "-c", expression]
