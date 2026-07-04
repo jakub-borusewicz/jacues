@@ -47,10 +47,42 @@ nix-shell --attr testFake --run "bats tools/tests/test_publish_nix_fake.bats"
 nix-shell --attr default --run "bats ci/github_actions/tests/test_gh_actions_template.bats"
 ```
 
-Tests run from the repo root — CUE resolves the module from there, and `cue cmd <name>`
-must match a command defined in `internal_tool.cue`.
+Tests run from the repo root by default — CUE resolves the module from there. Tool
+tests instead `cd` into a generated temp directory before running `cue cmd <name>` (see
+below), so `<name>` only needs to match a command defined in that temp file, not
+anything in `internal_tool.cue`.
 
 ## Testing a CUE tool (always mocked)
+
+**Test the reusable `#commands.*` definition in `tools/tool_utils.cue`, not
+`internal_tool.cue`'s wiring of it.** `internal_tool.cue` is just one consumer of these
+definitions — another project could import this module and wire the same command up
+under a different name, with different defaults, or not at all. So instead of running
+`cue cmd <name>` against this repo's own `internal_tool.cue`, each fake-lane test
+generates its own throwaway `*_tool.cue` file (CUE only loads commands from files named
+`*_tool.cue`) that imports `tools:tool_utils` and wires up just the one `#commands.*`
+definition under test. That way the test still passes even if `internal_tool.cue`
+renames, stops using, or never defined that command.
+
+The shared helper for this lives in `tools/tests/test_helper.bash`:
+
+```bash
+create_tool_test_dir() {
+  local dir
+  dir="$(mktemp -d "${BATS_TEST_DIRNAME}/tmp_tool_test.XXXXXX")"
+  cat > "$dir/test_tool.cue"
+  echo "$dir"
+}
+```
+
+It makes a temp dir *inside the repo* (self-imports of `github.com/jakub-borusewicz/jacues/...`
+only resolve from somewhere under this module's root — a `/tmp` dir outside the repo
+won't work) and writes whatever CUE is piped to it as `test_tool.cue`. Load it with
+`load 'test_helper'` near the top of the bats file, build the dir in `setup()` by piping
+in a small CUE snippet that wires up just the one command under test, `rm -rf` it in
+`teardown()` alongside the other scratch dirs, and run tests as `cd "$TOOL_DIR" && cue
+cmd <name> ...`. Full example below. `tmp_tool_test.*` is gitignored as a safety net in
+case a crashed run ever leaves one behind.
 
 Fakes are built in `shell.nix` with `pkgs.writeShellScriptBin` and placed only in the
 `testFake` shell's `packages` — never in `default`. Pattern used for `fake-cue` and
@@ -97,25 +129,38 @@ Reference example, `tools/tests/test_publish_nix_fake.bats`:
 ```bash
 # bats file_tags=nix_fake
 
+load 'test_helper'
+
 setup() {
   bats_load_library bats-support
   bats_load_library bats-assert
 
   export GIT_CALLS_DIR="/tmp/git_calls_$$_${BATS_TEST_NUMBER}"
   export CUE_CALLS_DIR="/tmp/cue_calls_$$_${BATS_TEST_NUMBER}"
+  mkdir -p "$GIT_CALLS_DIR" "$CUE_CALLS_DIR"
+
+  TOOL_DIR="$(create_tool_test_dir <<'EOF'
+package publish_cue_module_test
+
+import Tu "github.com/jakub-borusewicz/jacues/tools:tool_utils"
+
+#version_file: string @tag(version_file)
+
+command: publish: Tu.#commands.publish_cue_module & {version_file_name: #version_file}
+EOF
+)"
+  export TOOL_DIR
   VERSION_FILE="version_test_${BATS_TEST_NUMBER}"
   export VERSION_FILE
-  mkdir -p "$GIT_CALLS_DIR" "$CUE_CALLS_DIR"
-  printf "v0.0.11\n" > "$VERSION_FILE"
+  printf "v0.0.11\n" > "$TOOL_DIR/$VERSION_FILE"
 }
 
 teardown() {
-  rm -rf "$GIT_CALLS_DIR" "$CUE_CALLS_DIR"
-  rm -f "$VERSION_FILE"
+  rm -rf "$GIT_CALLS_DIR" "$CUE_CALLS_DIR" "$TOOL_DIR"
 }
 
-@test "publish updates version file with bumped patch version" {
-  run cue cmd publish -t "version_file=$VERSION_FILE"
+@test "publish_cue_module updates version file with bumped patch version" {
+  run bash -c "cd '$TOOL_DIR' && cue cmd publish -t 'version_file=$VERSION_FILE'"
   assert_success
 
   run cat "$GIT_CALLS_DIR/002.txt"
@@ -129,13 +174,16 @@ teardown() {
 Key points:
 - `# bats file_tags=nix_fake` must be the **first line** of the file — this is what
   routes the file into the `testFake` lane. Filename convention: `test_<tool>_nix_fake.bats`.
+- `load 'test_helper'` pulls in `create_tool_test_dir` (see above).
 - `setup()`/`teardown()` create and clean up a unique `*_CALLS_DIR` per test
-  (`$$_${BATS_TEST_NUMBER}` avoids collisions across parallel/repeated runs) and any
-  scratch files the tool writes to (e.g. a fake version file) — never point a test at
-  the repo's real `version` file.
+  (`$$_${BATS_TEST_NUMBER}` avoids collisions across parallel/repeated runs), plus the
+  `TOOL_DIR` from `create_tool_test_dir` and any scratch files the tool writes to (e.g.
+  a fake version file *inside* `TOOL_DIR`) — never point a test at the repo's real
+  `version` file.
 - Assert call order/content by reading the numbered files in `$*_CALLS_DIR`
   (`001.txt`, `002.txt`, ...), one per invocation of the mocked program.
-- Drive the tool the same way a user would: `cue cmd <command> -t "<tag>=<value>"`.
+- Drive the tool the same way a user would, just from `TOOL_DIR`:
+  `cd "$TOOL_DIR" && cue cmd <command> -t "<tag>=<value>"`.
 
 ## Testing plain CUE (no mocking, no tag)
 
@@ -180,3 +228,7 @@ list of field names/values.
 - Asserting on `$CUE_CALLS_DIR/001.txt` etc. without accounting for every call the tool
   makes to that program, including passthrough ones — the fake numbers *all*
   invocations it intercepts, in call order.
+- Running `cue cmd <name>` against this repo's own `internal_tool.cue` instead of a
+  throwaway `*_tool.cue` file — couples the test to how this repo happens to expose the
+  command, which breaks if `internal_tool.cue` renames or drops it, and can't cover a
+  `#commands.*` definition this repo never wires up at all.

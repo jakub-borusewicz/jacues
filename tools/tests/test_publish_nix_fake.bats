@@ -1,5 +1,7 @@
 # bats file_tags=nix_fake
 
+load 'test_helper'
+
 setup() {
   bats_load_library bats-support
   bats_load_library bats-assert
@@ -8,18 +10,7 @@ setup() {
   export CUE_CALLS_DIR="/tmp/cue_calls_$$_${BATS_TEST_NUMBER}"
   mkdir -p "$GIT_CALLS_DIR" "$CUE_CALLS_DIR"
 
-  # Wire #commands.publish_cue_module up via a throwaway _tool.cue file (cue only
-  # loads command definitions from files named "*_tool.cue") instead of relying on
-  # internal_tool.cue's "publish" command. This is the same shape a downstream
-  # project would use after importing tools:tool_utils, so the test stays valid
-  # regardless of whether/how this repo's own tool file wires the command up.
-  TOOL_DIR="$(mktemp -d "${BATS_TEST_DIRNAME}/tmp_publish_cue_module_test.XXXXXX")"
-  export TOOL_DIR
-  VERSION_FILE="version_test_${BATS_TEST_NUMBER}"
-  export VERSION_FILE
-  printf "v0.0.11\n" > "$TOOL_DIR/$VERSION_FILE"
-
-  cat > "$TOOL_DIR/publish_cue_module_test_tool.cue" <<'EOF'
+  TOOL_DIR="$(create_tool_test_dir <<'EOF'
 package publish_cue_module_test
 
 import Tu "github.com/jakub-borusewicz/jacues/tools:tool_utils"
@@ -28,6 +19,11 @@ import Tu "github.com/jakub-borusewicz/jacues/tools:tool_utils"
 
 command: publish: Tu.#commands.publish_cue_module & {version_file_name: #version_file}
 EOF
+)"
+  export TOOL_DIR
+  VERSION_FILE="version_test_${BATS_TEST_NUMBER}"
+  export VERSION_FILE
+  printf "v0.0.11\n" > "$TOOL_DIR/$VERSION_FILE"
 }
 
 teardown() {
