@@ -2,24 +2,15 @@
   pkgs ? import <nixpkgs> { },
 }:
 let
+  mkFakeCli = import ./nix/fake-cli.nix { inherit pkgs; };
+
   real-cue = pkgs.cue;
-  fake-cue = pkgs.writeShellScriptBin "cue" ''
-    if [ "$1" = "export" ] || { [ "$1" = "mod" ] && [ "$2" = "publish" ]; }; then
-      dir="''${CUE_CALLS_DIR:?CUE_CALLS_DIR must be set}"
-      mkdir -p "$dir"
-      n=$(find "$dir" -maxdepth 1 -name "*.txt" | wc -l)
-      echo "$@" > "$dir/$(printf '%03d' $((n + 1))).txt"
-      exit 0
-    else
-      exec ${real-cue}/bin/cue "$@"
-    fi
-  '';
-  fake-git = pkgs.writeShellScriptBin "git" ''
-    dir="''${GIT_CALLS_DIR:?GIT_CALLS_DIR must be set}"
-    mkdir -p "$dir"
-    n=$(find "$dir" -maxdepth 1 -name "*.txt" | wc -l)
-    echo "$@" > "$dir/$(printf '%03d' $((n + 1))).txt"
-  '';
+  fake-cue = mkFakeCli {
+    name = "cue";
+    realPackage = real-cue;
+    interceptWhen = ''[ "$1" = "export" ] || { [ "$1" = "mod" ] && [ "$2" = "publish" ]; }'';
+  };
+  fake-git = mkFakeCli { name = "git"; };
   bats-with-libs = pkgs.bats.withLibraries (p: [ p.bats-support p.bats-assert ]);
 in
 {

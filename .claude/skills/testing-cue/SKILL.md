@@ -1,6 +1,6 @@
 ---
 name: testing-cue
-description: Use when writing or running bats tests for this project's CUE code — plain CUE files/definitions/templates (tested via `cue export`, no mocking) or CUE tools/commands in internal_tool.cue and tools/tool_utils.cue that shell out via tool/exec (must always run under mocked git/cue binaries). Also covers running/debugging `just test`.
+description: Use when writing or running bats tests for this project's CUE code — plain CUE files/definitions/templates (tested via `cue export`, no mocking) or CUE tools/commands in internal_tool.cue and tools/tool_utils.cue that shell out via tool/exec (must always run under mocked git/cue binaries built with nix/fake-cli.nix's mkFakeCli). Also covers running/debugging `just test`, and adding a new mocked CLI fake.
 ---
 
 # Testing CUE
@@ -84,45 +84,40 @@ in a small CUE snippet that wires up just the one command under test, `rm -rf` i
 cmd <name> ...`. Full example below. `tmp_tool_test.*` is gitignored as a safety net in
 case a crashed run ever leaves one behind.
 
-Fakes are built in `shell.nix` with `pkgs.writeShellScriptBin` and placed only in the
-`testFake` shell's `packages` — never in `default`. Pattern used for `fake-cue` and
-`fake-git`:
+Fakes are built with `nix/fake-cli.nix`'s `mkFakeCli` function and wired into
+`shell.nix`'s `testFake` shell only — never `default`:
 
 ```nix
-fake-git = pkgs.writeShellScriptBin "git" ''
-  dir="''${GIT_CALLS_DIR:?GIT_CALLS_DIR must be set}"
-  mkdir -p "$dir"
-  n=$(find "$dir" -maxdepth 1 -name "*.txt" | wc -l)
-  echo "$@" > "$dir/$(printf '%03d' $((n + 1))).txt"
-'';
+mkFakeCli = import ./nix/fake-cli.nix { inherit pkgs; };
+
+fake-git = mkFakeCli { name = "git"; };
+
+fake-cue = mkFakeCli {
+  name = "cue";
+  realPackage = real-cue;
+  interceptWhen = ''[ "$1" = "export" ] || { [ "$1" = "mod" ] && [ "$2" = "publish" ]; }'';
+};
 ```
 
-Each invocation appends `$@` to a new zero-padded file (`001.txt`, `002.txt`, ...) in a
-directory named by an env var the test sets (`GIT_CALLS_DIR`, `CUE_CALLS_DIR`). This lets
-a test assert both *that* a call happened and *what arguments* it received, in order,
-without running the real command.
+`mkFakeCli { name, realPackage ? null, interceptWhen ? "true", ... }` builds a
+`writeShellScriptBin` that, whenever `interceptWhen` (a bash condition, default: always)
+is true, appends `"$@"` to a new zero-padded file (`001.txt`, `002.txt`, ...) in a
+directory named by `<NAME>_CALLS_DIR` (e.g. `GIT_CALLS_DIR`, `CUE_CALLS_DIR`) — letting a
+test assert both *that* a call happened and *what arguments* it received, in order,
+without running the real command. When `interceptWhen` is false it `exec`s the real
+binary via `realPackage` (omit `realPackage` for a tool, like git, that should never run
+for real in tests — `interceptWhen` then has nothing to fall through to, so leave it at
+the default "always intercept").
 
-`fake-cue` additionally falls through to the real `cue` binary for subcommands it doesn't
-need to intercept (anything but `export` / `mod publish`), because the tool under test
-still needs real CUE evaluation to run:
+A test can also control what the fake returns, via two more env vars the fake reads on
+every intercepted call: `<NAME>_MOCK_STDOUT` (literal text to print) and
+`<NAME>_MOCK_EXIT_CODE` (defaults to `0`). Set them in `setup()` for a test that needs
+the tool under test to see specific output or a failure from the program it shells out
+to — e.g. `export CUE_MOCK_EXIT_CODE=1` to make the next `cue` call fail.
 
-```nix
-fake-cue = pkgs.writeShellScriptBin "cue" ''
-  if [ "$1" = "export" ] || { [ "$1" = "mod" ] && [ "$2" = "publish" ]; }; then
-    dir="''${CUE_CALLS_DIR:?CUE_CALLS_DIR must be set}"
-    ...
-  else
-    exec ${real-cue}/bin/cue "$@"
-  fi
-'';
-```
-
-**Adding a new tool that shells out to a program:** add a `writeShellScriptBin` binding
-for that program in `shell.nix`, record calls the same way (own `*_CALLS_DIR` env var),
-add it to `testFake.packages` only, and fall through to the real binary for any
-subcommand your tool needs evaluated for real. (There's an open TODO to generalize this
-mocking — passthrough, call recording, and settable mock output — instead of hand-rolling
-each fake; check `TODO.md` before duplicating the pattern for a third program.)
+**Adding a new tool that shells out to a program:** call `mkFakeCli` for it in
+`shell.nix`, add the result to `testFake.packages` only, and pass `realPackage`
++ `interceptWhen` if some of its subcommands need to run for real.
 
 Reference example, `tools/tests/test_publish_nix_fake.bats`:
 

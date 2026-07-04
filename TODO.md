@@ -1,3 +1,1 @@
-- Generalize the logic for mocking CLI tools for cue tools testing - commands passthrough, saving the inputs to temporary files, and setting the mock output in test setup
-- Find a way of testing cue commands without the need of including them in project `_tool.cue` file - we want to test command definitions in these repo that won't be used internally by this repo.
 - Get caveman plugin for claude to make skills and claude.md less verbose.
