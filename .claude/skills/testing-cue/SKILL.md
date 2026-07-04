@@ -1,0 +1,182 @@
+---
+name: testing-cue
+description: Use when writing or running bats tests for this project's CUE code — plain CUE files/definitions/templates (tested via `cue export`, no mocking) or CUE tools/commands in internal_tool.cue and tools/tool_utils.cue that shell out via tool/exec (must always run under mocked git/cue binaries). Also covers running/debugging `just test`.
+---
+
+# Testing CUE
+
+## Overview
+
+This repo's CUE code is tested with [bats](https://bats-core.readthedocs.io/)
+(`bats-support` + `bats-assert`), run inside Nix shells so dependencies are pinned.
+There are two kinds of CUE under test, and they are tested completely differently:
+
+| What you're testing | Has side effects? | How | Tag / lane |
+|---|---|---|---|
+| Plain CUE (structs, definitions, templates) | No | Assert on `cue export` output | none — real lane |
+| A CUE **tool** (`command:` in `internal_tool.cue`, built from `tool/exec`/`tool/file` in `tools/tool_utils.cue`) | Yes, by design | Assert on mocked-program call logs | `# bats file_tags=nix_fake` — fake lane |
+
+**The rule: a CUE tool is never tested without mocking every program it runs.**
+Tools exist specifically to run `git commit`, `git push`, `cue mod publish`, write files,
+etc. — that's the point of a tool, as opposed to a plain CUE value. Running one for real
+in a test means actually committing/pushing/publishing from the test suite. There is no
+"just try it and see" tier for tools; if it shells out, it runs under fakes, full stop.
+
+Plain CUE (no `tool/exec`) has no side effects to fake, so it's tested the opposite way:
+run it for real through `cue export` and assert on the output — optionally unifying in a
+small extra CUE snippet (piped in, or via `-t`/`-e`) to exercise a specific branch
+without editing the file under test.
+
+## Running tests
+
+```bash
+just test
+```
+
+Runs both lanes (see `justfile`):
+
+```
+nix-shell --attr testFake --run "bats --filter-tags 'nix_fake' --recursive ."
+nix-shell --attr default --run "bats --filter-tags '!nix_fake' --recursive ."
+```
+
+To iterate on one file without the full suite, drop into the matching shell directly:
+
+```bash
+nix-shell --attr testFake --run "bats tools/tests/test_publish_nix_fake.bats"
+nix-shell --attr default --run "bats ci/github_actions/tests/test_gh_actions_template.bats"
+```
+
+Tests run from the repo root — CUE resolves the module from there, and `cue cmd <name>`
+must match a command defined in `internal_tool.cue`.
+
+## Testing a CUE tool (always mocked)
+
+Fakes are built in `shell.nix` with `pkgs.writeShellScriptBin` and placed only in the
+`testFake` shell's `packages` — never in `default`. Pattern used for `fake-cue` and
+`fake-git`:
+
+```nix
+fake-git = pkgs.writeShellScriptBin "git" ''
+  dir="''${GIT_CALLS_DIR:?GIT_CALLS_DIR must be set}"
+  mkdir -p "$dir"
+  n=$(find "$dir" -maxdepth 1 -name "*.txt" | wc -l)
+  echo "$@" > "$dir/$(printf '%03d' $((n + 1))).txt"
+'';
+```
+
+Each invocation appends `$@` to a new zero-padded file (`001.txt`, `002.txt`, ...) in a
+directory named by an env var the test sets (`GIT_CALLS_DIR`, `CUE_CALLS_DIR`). This lets
+a test assert both *that* a call happened and *what arguments* it received, in order,
+without running the real command.
+
+`fake-cue` additionally falls through to the real `cue` binary for subcommands it doesn't
+need to intercept (anything but `export` / `mod publish`), because the tool under test
+still needs real CUE evaluation to run:
+
+```nix
+fake-cue = pkgs.writeShellScriptBin "cue" ''
+  if [ "$1" = "export" ] || { [ "$1" = "mod" ] && [ "$2" = "publish" ]; }; then
+    dir="''${CUE_CALLS_DIR:?CUE_CALLS_DIR must be set}"
+    ...
+  else
+    exec ${real-cue}/bin/cue "$@"
+  fi
+'';
+```
+
+**Adding a new tool that shells out to a program:** add a `writeShellScriptBin` binding
+for that program in `shell.nix`, record calls the same way (own `*_CALLS_DIR` env var),
+add it to `testFake.packages` only, and fall through to the real binary for any
+subcommand your tool needs evaluated for real. (There's an open TODO to generalize this
+mocking — passthrough, call recording, and settable mock output — instead of hand-rolling
+each fake; check `TODO.md` before duplicating the pattern for a third program.)
+
+Reference example, `tools/tests/test_publish_nix_fake.bats`:
+
+```bash
+# bats file_tags=nix_fake
+
+setup() {
+  bats_load_library bats-support
+  bats_load_library bats-assert
+
+  export GIT_CALLS_DIR="/tmp/git_calls_$$_${BATS_TEST_NUMBER}"
+  export CUE_CALLS_DIR="/tmp/cue_calls_$$_${BATS_TEST_NUMBER}"
+  VERSION_FILE="version_test_${BATS_TEST_NUMBER}"
+  export VERSION_FILE
+  mkdir -p "$GIT_CALLS_DIR" "$CUE_CALLS_DIR"
+  printf "v0.0.11\n" > "$VERSION_FILE"
+}
+
+teardown() {
+  rm -rf "$GIT_CALLS_DIR" "$CUE_CALLS_DIR"
+  rm -f "$VERSION_FILE"
+}
+
+@test "publish updates version file with bumped patch version" {
+  run cue cmd publish -t "version_file=$VERSION_FILE"
+  assert_success
+
+  run cat "$GIT_CALLS_DIR/002.txt"
+  assert_output "commit -m version v0.0.12"
+
+  run cat "$CUE_CALLS_DIR/001.txt"
+  assert_output "mod publish v0.0.12"
+}
+```
+
+Key points:
+- `# bats file_tags=nix_fake` must be the **first line** of the file — this is what
+  routes the file into the `testFake` lane. Filename convention: `test_<tool>_nix_fake.bats`.
+- `setup()`/`teardown()` create and clean up a unique `*_CALLS_DIR` per test
+  (`$$_${BATS_TEST_NUMBER}` avoids collisions across parallel/repeated runs) and any
+  scratch files the tool writes to (e.g. a fake version file) — never point a test at
+  the repo's real `version` file.
+- Assert call order/content by reading the numbered files in `$*_CALLS_DIR`
+  (`001.txt`, `002.txt`, ...), one per invocation of the mocked program.
+- Drive the tool the same way a user would: `cue cmd <command> -t "<tag>=<value>"`.
+
+## Testing plain CUE (no mocking, no tag)
+
+Plain CUE — templates, definitions, anything without `tool/exec`/`tool/file` — has
+nothing to mock. Test it by evaluating it for real with `cue export` and asserting on
+output, optionally unifying in extra CUE (piped in, or a field override) to hit a
+particular case. See `ci/github_actions/tests/test_gh_actions_template.bats`:
+
+```bash
+setup() {
+  bats_load_library bats-support
+  bats_load_library bats-assert
+}
+
+@test "test export" {
+  run bats_pipe echo 'package github_actions_template,#project_type: "cue_module"' \| cue export --out yaml ci/github_actions/github_actions_template.cue -
+  assert_success
+  assert_output --partial - <<-'EOF'
+jobs:
+  test_cue_module:
+...
+EOF
+}
+```
+
+`pre_commit/tests/test_template.bats` shows the same idea plus a pattern for generating
+one test per case via a bash loop + `bats_test_function`, instead of hand-writing
+near-duplicate `@test` blocks — reach for it when the same assertion needs to run over a
+list of field names/values.
+
+## Common mistakes
+
+- **Testing a tool without mocking what it shells out to.** If it uses `tool/exec` /
+  `tool/file`, it goes in the fake lane — no exceptions, even for a "quick" test. Running
+  it in the `default` lane means it actually commits/pushes/publishes.
+- Adding a fake binary to `default.packages` in `shell.nix` — that defeats the point of
+  the real lane.
+- Forgetting the `# bats file_tags=nix_fake` first line — the test silently runs in the
+  wrong lane against real binaries.
+- Not giving each test its own `*_CALLS_DIR`/scratch file — parallel or repeated test
+  runs will clobber each other's recorded calls.
+- Asserting on `$CUE_CALLS_DIR/001.txt` etc. without accounting for every call the tool
+  makes to that program, including passthrough ones — the fake numbers *all*
+  invocations it intercepts, in call order.

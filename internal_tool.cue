@@ -11,7 +11,7 @@ import Tu "github.com/jakub-borusewicz/jacues/tools:tool_utils"
 
 command: {
 	cue_auto_export: Tu.#commands.cue_auto_export & {file_path: #cue_file_path}
-	publish: Tu.#commands.publish & {version_file_name: #version_file}
+	publish: Tu.#commands.publish_cue_module & {version_file_name: #version_file}
 	test: {
 		print: cli.Print & {
 			text: "lol2"
