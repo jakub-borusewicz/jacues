@@ -1,7 +1,8 @@
-# Builds a fake CLI binary for bats tests: it logs every invocation's argv to a
-# numbered file in a directory named by an env var, optionally falls through to a
-# real binary for argv it shouldn't intercept, and optionally emits mock stdout /
-# exit code set by the test. See .claude/skills/testing-cue for usage.
+# Builds a fake CLI binary for bats tests: by default it intercepts every
+# invocation, logging its argv to a numbered file in a directory named by an env
+# var; for selected argv patterns it can instead fall through to a real binary.
+# It can also emit mock stdout / exit code set by the test. See
+# .claude/skills/testing-cue for usage.
 #
 # Usage (from a shell.nix):
 #
@@ -12,7 +13,7 @@
 #   fake-cue = mkFakeCli {
 #     name = "cue";
 #     realPackage = pkgs.cue;
-#     interceptWhen = ''[ "$1" = "export" ] || { [ "$1" = "mod" ] && [ "$2" = "publish" ]; }'';
+#     passthroughWhen = ''! { [ "$1" = "export" ] || { [ "$1" = "mod" ] && [ "$2" = "publish" ]; }; }'';
 #   };
 #
 # A test then drives the fake via three env vars (defaults shown for name = "cue"):
@@ -25,13 +26,14 @@
 
 {
   name,
-  # Package providing the real binary, for argv that isn't intercepted. Omit for a
-  # tool that should never run for real in tests (e.g. git).
+  # Package providing the real binary, for argv that gets passed through. Omit for
+  # a tool that should never run for real in tests (e.g. git).
   realPackage ? null,
-  # Bash condition (as a string) deciding whether to intercept "$@". Defaults to
-  # always intercepting. Only meaningful when `realPackage` is set — without a real
-  # binary to fall through to, everything is intercepted regardless.
-  interceptWhen ? "true",
+  # Bash condition (as a string) deciding whether to pass "$@" through to the real
+  # binary instead of intercepting it. Defaults to never passing through, i.e.
+  # everything is intercepted. Only meaningful when `realPackage` is set — without
+  # a real binary to fall through to, everything is intercepted regardless.
+  passthroughWhen ? "false",
   # Override the env var names below instead of deriving them from `name`.
   callsDirEnv ? null,
   mockStdoutEnv ? null,
@@ -53,7 +55,9 @@ let
       ''exec ${realPackage}/bin/${name} "$@"'';
 in
 pkgs.writeShellScriptBin name ''
-  if ${interceptWhen}; then
+  if ${passthroughWhen}; then
+    ${passthrough}
+  else
     dir="''${${callsDir}:?${callsDir} must be set}"
     mkdir -p "$dir"
     n=$(find "$dir" -maxdepth 1 -name "*.txt" | wc -l)
@@ -63,7 +67,5 @@ pkgs.writeShellScriptBin name ''
       printf '%s' "''${${mockStdout}}"
     fi
     exit "''${${mockExitCode}:-0}"
-  else
-    ${passthrough}
   fi
 ''

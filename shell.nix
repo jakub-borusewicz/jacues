@@ -8,7 +8,7 @@ let
   fake-cue = mkFakeCli {
     name = "cue";
     realPackage = real-cue;
-    interceptWhen = ''[ "$1" = "export" ] || { [ "$1" = "mod" ] && [ "$2" = "publish" ]; }'';
+    passthroughWhen = ''! { [ "$1" = "export" ] || { [ "$1" = "mod" ] && [ "$2" = "publish" ]; }; }'';
   };
   fake-git = mkFakeCli { name = "git"; };
   bats-with-libs = pkgs.bats.withLibraries (p: [ p.bats-support p.bats-assert ]);

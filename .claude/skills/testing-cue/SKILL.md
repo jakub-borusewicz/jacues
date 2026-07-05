@@ -95,19 +95,20 @@ fake-git = mkFakeCli { name = "git"; };
 fake-cue = mkFakeCli {
   name = "cue";
   realPackage = real-cue;
-  interceptWhen = ''[ "$1" = "export" ] || { [ "$1" = "mod" ] && [ "$2" = "publish" ]; }'';
+  passthroughWhen = ''! { [ "$1" = "export" ] || { [ "$1" = "mod" ] && [ "$2" = "publish" ]; }; }'';
 };
 ```
 
-`mkFakeCli { name, realPackage ? null, interceptWhen ? "true", ... }` builds a
-`writeShellScriptBin` that, whenever `interceptWhen` (a bash condition, default: always)
-is true, appends `"$@"` to a new zero-padded file (`001.txt`, `002.txt`, ...) in a
-directory named by `<NAME>_CALLS_DIR` (e.g. `GIT_CALLS_DIR`, `CUE_CALLS_DIR`) — letting a
-test assert both *that* a call happened and *what arguments* it received, in order,
-without running the real command. When `interceptWhen` is false it `exec`s the real
-binary via `realPackage` (omit `realPackage` for a tool, like git, that should never run
-for real in tests — `interceptWhen` then has nothing to fall through to, so leave it at
-the default "always intercept").
+`mkFakeCli { name, realPackage ? null, passthroughWhen ? "false", ... }` builds a
+`writeShellScriptBin` that intercepts everything by default: unless `passthroughWhen` (a
+bash condition) is true for the given `"$@"`, it appends `"$@"` to a new zero-padded file
+(`001.txt`, `002.txt`, ...) in a directory named by `<NAME>_CALLS_DIR` (e.g.
+`GIT_CALLS_DIR`, `CUE_CALLS_DIR`) — letting a test assert both *that* a call happened and
+*what arguments* it received, in order, without running the real command. When
+`passthroughWhen` is true it `exec`s the real binary via `realPackage` instead (omit
+`realPackage` for a tool, like git, that should never run for real in tests —
+`passthroughWhen` then has nothing to fall through to, so leave it at the default
+"never pass through").
 
 A test can also control what the fake returns, via two more env vars the fake reads on
 every intercepted call: `<NAME>_MOCK_STDOUT` (literal text to print) and
@@ -117,7 +118,7 @@ to — e.g. `export CUE_MOCK_EXIT_CODE=1` to make the next `cue` call fail.
 
 **Adding a new tool that shells out to a program:** call `mkFakeCli` for it in
 `shell.nix`, add the result to `testFake.packages` only, and pass `realPackage`
-+ `interceptWhen` if some of its subcommands need to run for real.
++ `passthroughWhen` if some of its subcommands need to run for real.
 
 Reference example, `tools/tests/test_publish_nix_fake.bats`:
 
