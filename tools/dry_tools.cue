@@ -1,34 +1,30 @@
 package dry_tools
 
-import "strings"
+import (
+	"strings"
+	"tool/cli"
+	"tool/exec"
+)
 
 // Drop-in for exec.Run with a dry-run mode.
+//
+// cue cmd only recognizes a struct as a task if its $id can be traced back to
+// one of the real tool/* packages (see internal/task's isTask check in the cue
+// source) - a hand-written `$id: "tool/exec.Run"` field looks right but is
+// never picked up. So instead of faking $id, unify with the real exec.Run or
+// cli.Print depending on `dry`.
 Run: {
 	dry: bool | *false
-
-	// mirror exec.Run's schema
-	cmd:    string | [...string]
-	dir?:   string
-	env: [string]: string | [...string]
-	stdout:      *null | string | bytes
-	stderr:      *null | string | bytes
-	stdin:       *null | string | bytes
-	success:     bool
-	mustSucceed: bool | *true
+	cmd: string | [...string]
 
 	_cmdStr: string
 	if (cmd & string) != _|_ {_cmdStr: cmd}
 	if (cmd & [...string]) != _|_ {_cmdStr: strings.Join(cmd, " ")}
 
 	if !dry {
-		$id: "tool/exec.Run"
+		exec.Run & {cmd: cmd}
 	}
 	if dry {
-		$id:  "tool/cli.Print"
-		text: "DRY: would run: \(_cmdStr)"
-
-		// fake the outputs so dependent tasks still become runnable
-		if (stdout & string) != _|_ {stdout: ""}
-		success: true
+		cli.Print & {text: "DRY: would run: \(_cmdStr)"}
 	}
 }
