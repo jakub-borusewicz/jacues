@@ -12,3 +12,7 @@ pre-commit:
 test:
     nix-shell --attr testFake --run "bats --filter-tags 'nix_fake' --recursive ."
     nix-shell --attr default --run "bats --filter-tags '!nix_fake' --recursive ."
+
+
+debug_cue file expression:
+    cue eval {{file}} -e "{{expression}}" --all
