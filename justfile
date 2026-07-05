@@ -20,3 +20,9 @@ debug_cue file expression:
 
 mermaid_graph:
     CUE_DEBUG=toolsflow cue cmd test 2>&1 >/dev/null | awk '/^```mermaid$/{buf=""; f=1; next} /^```$/{if(f) last=buf; f=0; next} f{buf=buf $0 "\n"} END{printf "%s", last}' | mermaid-ascii -f -
+
+mermaid_graph_2:
+    CUE_DEBUG=toolsflow cue cmd -t dry=true test 2>&1 >/dev/null \
+      | awk '/^```mermaid$/{buf=""; f=1; next} /^```$/{if(f) last=buf; f=0; next} f{buf=buf $0 "\n"} END{printf "%s", last}' \
+      | mmdc -i - -e png -o - \
+      | mpv --image-display-duration=inf --really-quiet -

@@ -8,7 +8,7 @@ import (
 import Tu "github.com/jakub-borusewicz/jacues/tools:tool_utils"
 import dry_tools "github.com/jakub-borusewicz/jacues/tools:dry_tools"
 
-dryRun: bool | *false @tag(dry,type=bool)
+dry_run: bool | *false @tag(dry,type=bool)
 
 #cue_file_path: string              @tag(cue_file_path)
 #version_file:  string | *"version" @tag(version_file)
@@ -21,7 +21,7 @@ command: {
 			text: "lol2"
 		}
 		print2: dry_tools.Run & {
-			dry: dryRun
+			dry: dry_run
 			cmd: "echo 'lol xd'"
 			$after: print
 		}
