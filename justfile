@@ -16,3 +16,7 @@ test:
 
 debug_cue file expression:
     cue eval {{file}} -e "{{expression}}" --all
+
+
+mermaid_graph:
+    CUE_DEBUG=toolsflow cue cmd test 2>&1 >/dev/null | awk '/^```mermaid$/{buf=""; f=1; next} /^```$/{if(f) last=buf; f=0; next} f{buf=buf $0 "\n"} END{printf "%s", last}' | mermaid-ascii -f -

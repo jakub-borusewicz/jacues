@@ -1,2 +1,3 @@
 - Get caveman plugin for claude to make skills and claude.md less verbose.
 - Write IDE integration to use `cue eval -e <expression>` to evaluate CUE expressions in the IDE.
+- Find out if https://hofstadter.io/ can be useful.
