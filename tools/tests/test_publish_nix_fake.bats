@@ -37,12 +37,12 @@ teardown() {
   run cat "$TOOL_DIR/$VERSION_FILE"
   assert_output "v0.0.12"
 
-  run cat "$GIT_CALLS_DIR/002.txt"
-  assert_output "commit -m version v0.0.12"
+  run jq -c .argv "$GIT_CALLS_DIR/002.json"
+  assert_output '["commit","-m","version v0.0.12"]'
 
-  run cat "$CUE_CALLS_DIR/001.txt"
-  assert_output "mod publish v0.0.12"
+  run jq -c .argv "$CUE_CALLS_DIR/001.json"
+  assert_output '["mod","publish","v0.0.12"]'
 
-  run cat "$GIT_CALLS_DIR/003.txt"
-  assert_output "push"
+  run jq -c .argv "$GIT_CALLS_DIR/003.json"
+  assert_output '["push"]'
 }

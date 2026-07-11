@@ -2,10 +2,11 @@ package internal_tool
 
 import (
 	"tool/cli"
-//	"tool/exec"
+	//	"tool/exec"
 )
 
 import Tu "github.com/jakub-borusewicz/jacues/tools:tool_utils"
+
 import dry_tools "github.com/jakub-borusewicz/jacues/tools:dry_tools"
 
 dry_run: bool | *false @tag(dry,type=bool)
@@ -21,8 +22,8 @@ command: {
 			text: "lol2"
 		}
 		print2: dry_tools.Run & {
-			dry: dry_run
-			cmd: "echo 'lol xd'"
+			dry:    dry_run
+			cmd:    "echo 'lol xd'"
 			$after: print
 		}
 	}

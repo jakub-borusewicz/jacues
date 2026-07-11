@@ -1,6 +1,6 @@
 ---
 name: testing-cue
-description: Use when writing or running bats tests for this project's CUE code — plain CUE files/definitions/templates (tested via `cue export`, no mocking) or CUE tools/commands in internal_tool.cue and tools/tool_utils.cue that shell out via tool/exec (must always run under mocked git/cue binaries built with nix/fake-cli.nix's mkFakeCli). Also covers running/debugging `just test`, and adding a new mocked CLI fake.
+description: Use when writing or running bats tests for this project's CUE code — plain CUE files/definitions/templates (tested via `cue export`, no mocking) or CUE tools/commands in internal_tool.cue and tools/tool_utils.cue that shell out via tool/exec (must always run under mocked git/cue binaries built with the jakub-borusewicz/fake-cli mkFakeCli). Also covers running/debugging `just test`, and adding a new mocked CLI fake.
 ---
 
 # Testing CUE
@@ -84,11 +84,17 @@ in a small CUE snippet that wires up just the one command under test, `rm -rf` i
 cmd <name> ...`. Full example below. `tmp_tool_test.*` is gitignored as a safety net in
 case a crashed run ever leaves one behind.
 
-Fakes are built with `nix/fake-cli.nix`'s `mkFakeCli` function and wired into
+Fakes are built with [`jakub-borusewicz/fake-cli`](https://github.com/jakub-borusewicz/fake-cli)'s
+`mkFakeCli` function (pinned in `shell.nix` via `pkgs.fetchFromGitHub`) and wired into
 `shell.nix`'s `testFake` shell only — never `default`:
 
 ```nix
-mkFakeCli = import ./nix/fake-cli.nix { inherit pkgs; };
+mkFakeCli = import (pkgs.fetchFromGitHub {
+  owner = "jakub-borusewicz";
+  repo = "fake-cli";
+  rev = "v0.0.1";
+  hash = "sha256-...";
+}) { inherit pkgs; };
 
 fake-git = mkFakeCli { name = "git"; };
 
@@ -100,21 +106,26 @@ fake-cue = mkFakeCli {
 ```
 
 `mkFakeCli { name, realPackage ? null, passthroughWhen ? "false", ... }` builds a
-`writeShellScriptBin` that intercepts everything by default: unless `passthroughWhen` (a
-bash condition) is true for the given `"$@"`, it appends `"$@"` to a new zero-padded file
-(`001.txt`, `002.txt`, ...) in a directory named by `<NAME>_CALLS_DIR` (e.g.
-`GIT_CALLS_DIR`, `CUE_CALLS_DIR`) — letting a test assert both *that* a call happened and
-*what arguments* it received, in order, without running the real command. When
-`passthroughWhen` is true it `exec`s the real binary via `realPackage` instead (omit
-`realPackage` for a tool, like git, that should never run for real in tests —
-`passthroughWhen` then has nothing to fall through to, so leave it at the default
-"never pass through").
+`writeShellApplication` that intercepts everything by default: unless `passthroughWhen` (a
+bash condition) is true for the given `"$@"`, it writes a JSON record of the call
+(`{"argv": [...], "stdin": "..."}`, preserving exact argument boundaries) to a new
+zero-padded file (`001.json`, `002.json`, ...) in a directory named by
+`<NAME>_CALLS_DIR` (e.g. `GIT_CALLS_DIR`, `CUE_CALLS_DIR`) — letting a test assert both
+*that* a call happened and *what arguments/stdin* it received, in order, without running
+the real command. When `passthroughWhen` is true it `exec`s the real binary via
+`realPackage` instead (omit `realPackage` for a tool, like git, that should never run
+for real in tests — `passthroughWhen` then has nothing to fall through to, so leave it
+at the default "never pass through").
 
-A test can also control what the fake returns, via two more env vars the fake reads on
-every intercepted call: `<NAME>_MOCK_STDOUT` (literal text to print) and
+A test can also control what the fake returns, via env vars the fake reads on every
+intercepted call: `<NAME>_MOCK_STDOUT` / `<NAME>_MOCK_STDERR` (literal text to print) and
 `<NAME>_MOCK_EXIT_CODE` (defaults to `0`). Set them in `setup()` for a test that needs
 the tool under test to see specific output or a failure from the program it shells out
-to — e.g. `export CUE_MOCK_EXIT_CODE=1` to make the next `cue` call fail.
+to — e.g. `export CUE_MOCK_EXIT_CODE=1` to make the next `cue` call fail. Any of the
+three can be overridden for one specific call by suffixing the 1-based call number
+(e.g. `CUE_MOCK_STDOUT_2`), falling back to the unsuffixed var for every other call.
+`pkgs.jq` is on PATH in the `testFake` shell for reading the JSON call records back out
+in assertions, e.g. `jq -c .argv "$CUE_CALLS_DIR/001.json"`.
 
 **Adding a new tool that shells out to a program:** call `mkFakeCli` for it in
 `shell.nix`, add the result to `testFake.packages` only, and pass `realPackage`
@@ -159,11 +170,11 @@ teardown() {
   run bash -c "cd '$TOOL_DIR' && cue cmd publish -t 'version_file=$VERSION_FILE'"
   assert_success
 
-  run cat "$GIT_CALLS_DIR/002.txt"
-  assert_output "commit -m version v0.0.12"
+  run jq -c .argv "$GIT_CALLS_DIR/002.json"
+  assert_output '["commit","-m","version v0.0.12"]'
 
-  run cat "$CUE_CALLS_DIR/001.txt"
-  assert_output "mod publish v0.0.12"
+  run jq -c .argv "$CUE_CALLS_DIR/001.json"
+  assert_output '["mod","publish","v0.0.12"]'
 }
 ```
 
@@ -176,8 +187,9 @@ Key points:
   `TOOL_DIR` from `create_tool_test_dir` and any scratch files the tool writes to (e.g.
   a fake version file *inside* `TOOL_DIR`) — never point a test at the repo's real
   `version` file.
-- Assert call order/content by reading the numbered files in `$*_CALLS_DIR`
-  (`001.txt`, `002.txt`, ...), one per invocation of the mocked program.
+- Assert call order/content by reading the numbered JSON files in `$*_CALLS_DIR`
+  (`001.json`, `002.json`, ...), one per invocation of the mocked program, e.g. via
+  `jq -c .argv "$CUE_CALLS_DIR/001.json"`.
 - Drive the tool the same way a user would, just from `TOOL_DIR`:
   `cd "$TOOL_DIR" && cue cmd <command> -t "<tag>=<value>"`.
 
@@ -221,7 +233,7 @@ list of field names/values.
   wrong lane against real binaries.
 - Not giving each test its own `*_CALLS_DIR`/scratch file — parallel or repeated test
   runs will clobber each other's recorded calls.
-- Asserting on `$CUE_CALLS_DIR/001.txt` etc. without accounting for every call the tool
+- Asserting on `$CUE_CALLS_DIR/001.json` etc. without accounting for every call the tool
   makes to that program, including passthrough ones — the fake numbers *all*
   invocations it intercepts, in call order.
 - Running `cue cmd <name>` against this repo's own `internal_tool.cue` instead of a

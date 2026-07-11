@@ -3,6 +3,7 @@ package tool_utils
 import S "strings"
 
 import "path"
+
 import Sc "strconv"
 
 import (
@@ -12,7 +13,7 @@ import (
 )
 
 #commands: {
-	cue_auto_export: #cue_auto_export
+	cue_auto_export:    #cue_auto_export
 	publish_cue_module: #publish_cue_module
 }
 
@@ -42,47 +43,44 @@ extension_out_map: {
 	"":           "text"
 }
 
-
 #publish_cue_module: {
-		version_file_name: string
-		version_file_content: file.Read & {
-			filename: version_file_name
-			contents: string
-		}
-		get_semver: #get_semver_from_raw & {
-			raw: version_file_content.contents
-		}
-		bumped_version: #SemVer & {
-			major: get_semver.semver.major
-			minor: get_semver.semver.minor
-			patch: get_semver.semver.patch + 1
-		}
-		write_to_version_file: file.Create & {
-			filename: version_file_name
-			contents: "\(bumped_version.version_string)\n"
-		}
-		commit: exec.Run & #shell & {
-			_dep:       write_to_version_file.contents
-			expression: "git add * && git commit -m 'version \(bumped_version.version_string)'"
-			stdout:     string
-		}
-		run_publish: exec.Run & #shell & {
-			_dep:       commit.stdout
-			expression: "cue mod publish \(bumped_version.version_string)"
-			stdout:     string
-		}
-		push: exec.Run & #shell & {
-			_dep:       run_publish.stdout
-			expression: "git push"
-		}
-		print: cli.Print & {
-			text: "Published version \(bumped_version.version_string). Publish output: \(run_publish.stdout)"
-		}
+	version_file_name: string
+	version_file_content: file.Read & {
+		filename: version_file_name
+		contents: string
+	}
+	get_semver: #get_semver_from_raw & {
+		raw: version_file_content.contents
+	}
+	bumped_version: #SemVer & {
+		major: get_semver.semver.major
+		minor: get_semver.semver.minor
+		patch: get_semver.semver.patch + 1
+	}
+	write_to_version_file: file.Create & {
+		filename: version_file_name
+		contents: "\(bumped_version.version_string)\n"
+	}
+	commit: exec.Run & #shell & {
+		_dep:       write_to_version_file.contents
+		expression: "git add * && git commit -m 'version \(bumped_version.version_string)'"
+		stdout:     string
+	}
+	run_publish: exec.Run & #shell & {
+		_dep:       commit.stdout
+		expression: "cue mod publish \(bumped_version.version_string)"
+		stdout:     string
+	}
+	push: exec.Run & #shell & {
+		_dep:       run_publish.stdout
+		expression: "git push"
+	}
+	print: cli.Print & {
+		text: "Published version \(bumped_version.version_string). Publish output: \(run_publish.stdout)"
+	}
 }
 
-#publish_copier_template: {
-
-}
+#publish_copier_template: {}
 
 #shell: {
 	expression: string

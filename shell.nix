@@ -2,7 +2,12 @@
   pkgs ? import <nixpkgs> { },
 }:
 let
-  mkFakeCli = import ./nix/fake-cli.nix { inherit pkgs; };
+  mkFakeCli = import (pkgs.fetchFromGitHub {
+    owner = "jakub-borusewicz";
+    repo = "fake-cli";
+    rev = "v0.0.1";
+    hash = "sha256-wHJ+Xqh1iNFILuvwjv003rwRTtSV4v9ULLey9f+d8bg=";
+  }) { inherit pkgs; };
 
   real-cue = pkgs.cue;
   fake-cue = mkFakeCli {
@@ -18,6 +23,6 @@ in
     packages = [ real-cue bats-with-libs ];
   };
   testFake = pkgs.mkShell {
-    packages = [ fake-cue real-cue fake-git bats-with-libs ];
+    packages = [ fake-cue real-cue fake-git bats-with-libs pkgs.jq ];
   };
 }
