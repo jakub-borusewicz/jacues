@@ -78,7 +78,7 @@ extension_out_map: {
 	}
 	push: exec.Run & #shell & {
 		_dep:       run_publish.stdout
-		expression: "git push"
+		expression: "git push --follow-tags"
 	}
 	print: cli.Print & {
 		text: "Published version \(bumped_version.version_string). Publish output: \(run_publish.stdout)"

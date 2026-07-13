@@ -47,5 +47,5 @@ teardown() {
   assert_output '["mod","publish","v0.0.12"]'
 
   run jq -c .argv "$GIT_CALLS_DIR/004.json"
-  assert_output '["push"]'
+  assert_output '["push","--follow-tags"]'
 }
