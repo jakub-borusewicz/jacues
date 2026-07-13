@@ -41,7 +41,7 @@ teardown() {
   assert_output '["commit","-m","version v0.0.12"]'
 
   run jq -c .argv "$GIT_CALLS_DIR/003.json"
-  assert_output '["tag","v0.0.12"]'
+  assert_output '["tag","-a","v0.0.12","-m","version v0.0.12"]'
 
   run jq -c .argv "$CUE_CALLS_DIR/001.json"
   assert_output '["mod","publish","v0.0.12"]'

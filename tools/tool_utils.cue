@@ -68,7 +68,7 @@ extension_out_map: {
 	}
 	tag: exec.Run & #shell & {
 		_dep:       commit.stdout
-		expression: "git tag \(bumped_version.version_string)"
+		expression: "git tag -a \(bumped_version.version_string) -m 'version \(bumped_version.version_string)'"
 		stdout:     string
 	}
 	run_publish: exec.Run & #shell & {
